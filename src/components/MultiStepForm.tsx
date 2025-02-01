@@ -105,9 +105,11 @@ const MultiStepForm = () => {
       <div className="w-full max-w-xl">
         <div className="mb-8">
           <div className="flex items-center gap-2 text-lg font-medium text-primary mb-2">
-            <span className="flex items-center animate-pulse">
-              {currentStep}→
-            </span>
+            {currentStep < 3 && (
+              <span className="flex items-center animate-pulse">
+                {currentStep}→
+              </span>
+            )}
           </div>
         </div>
 
