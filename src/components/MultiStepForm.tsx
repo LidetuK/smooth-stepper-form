@@ -108,7 +108,6 @@ const MultiStepForm = () => {
             <span className="flex items-center animate-pulse">
               {currentStep}→
             </span>
-            <h2 className="animate-fade-in">Join the Waiting List</h2>
           </div>
         </div>
 
