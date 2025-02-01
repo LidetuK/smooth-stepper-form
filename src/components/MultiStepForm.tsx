@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
-import { ChevronUp, ChevronDown, Check } from "lucide-react";
+import { ChevronUp, ChevronDown, Check, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useToast } from "./ui/use-toast";
 
 interface FormData {
   firstName: string;
@@ -29,6 +30,9 @@ const sourceOptions = [
 const MultiStepForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
+  const { toast } = useToast();
+  const [autoProgress, setAutoProgress] = useState(false);
+
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -41,9 +45,36 @@ const MultiStepForm = () => {
     termsAccepted: false
   });
 
+  useEffect(() => {
+    if (currentStep === 1) {
+      const timer = setTimeout(() => {
+        setAutoProgress(true);
+        handleNext();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
   const handleNext = () => {
     setIsAnimating(true);
     setTimeout(() => {
+      if (currentStep === 2 && !formData.termsAccepted) {
+        toast({
+          title: "Please accept the terms",
+          description: "You must accept the terms and conditions to continue",
+          variant: "destructive"
+        });
+        setIsAnimating(false);
+        return;
+      }
+      
+      if (currentStep === 2) {
+        toast({
+          title: "Success!",
+          description: "Your information has been submitted successfully!",
+        });
+      }
+      
       setCurrentStep(prev => prev + 1);
       setIsAnimating(false);
     }, 300);
@@ -61,6 +92,12 @@ const MultiStepForm = () => {
 
   const handleInputChange = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'termsAccepted' && value === true) {
+      toast({
+        title: "Terms Accepted",
+        description: "Thank you for accepting our terms and conditions",
+      });
+    }
   };
 
   return (
@@ -68,23 +105,35 @@ const MultiStepForm = () => {
       <div className="w-full max-w-xl">
         <div className="mb-8">
           <div className="flex items-center gap-2 text-lg font-medium text-primary mb-2">
-            <span className="flex items-center">
+            <span className="flex items-center animate-pulse">
               {currentStep}→
             </span>
-            <h2>Join the Waiting List</h2>
+            <h2 className="animate-fade-in">Join the Waiting List</h2>
           </div>
         </div>
 
-        <div className={cn("space-y-6", isAnimating ? "slide-up-exit" : "slide-up-enter")}>
+        <div className={cn(
+          "space-y-6 transition-all duration-300 transform",
+          isAnimating ? "slide-up-exit opacity-0 -translate-y-4" : "slide-up-enter opacity-100 translate-y-0"
+        )}>
           {currentStep === 1 && (
-            <div className="prose prose-gray">
-              <h3 className="text-2xl font-semibold mb-4">Join the Waiting List for This Life-Changing Program!</h3>
+            <div className="prose prose-gray animate-fade-in">
+              <h3 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                Join the Waiting List for This Life-Changing Program!
+                <Sparkles className="h-5 w-5 text-yellow-500 animate-pulse" />
+              </h3>
               <p className="text-muted-foreground">
                 Thank you for your interest! We're thrilled that you want to be part of this transformative experience. 
                 Currently, the program is closed due to limited space, but don't worry—joining the waitlist is the best 
                 way to secure your spot when it reopens. Spaces fill up quickly, so sign up now to ensure you don't miss out!
               </p>
-              <Button onClick={handleNext} className="mt-4">Continue</Button>
+              <Button 
+                onClick={handleNext} 
+                className="mt-4 group hover:scale-105 transition-transform duration-200"
+              >
+                Continue
+                <ChevronDown className="ml-2 h-4 w-4 group-hover:animate-bounce" />
+              </Button>
             </div>
           )}
 
@@ -205,6 +254,22 @@ const MultiStepForm = () => {
               </div>
             </div>
           )}
+
+          {currentStep === 3 && (
+            <div className="text-center space-y-6 animate-fade-in">
+              <div className="rounded-full bg-green-100 p-4 mx-auto w-16 h-16 flex items-center justify-center mb-6">
+                <Check className="h-8 w-8 text-green-600 animate-scale-in" />
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-800">Thank you for submitting your details!</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                You've officially been added to the waitlist! We'll notify you as soon as a spot opens up, 
+                and we'll keep you updated with valuable insights and resources in the meantime.
+              </p>
+              <div className="animate-pulse">
+                <Sparkles className="h-6 w-6 text-yellow-500 mx-auto" />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="fixed bottom-4 right-4 flex gap-2">
@@ -212,15 +277,19 @@ const MultiStepForm = () => {
             onClick={handlePrevious}
             disabled={currentStep === 1}
             className={cn(
-              "p-2 rounded-full transition-opacity duration-200",
-              currentStep === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-accent"
+              "p-2 rounded-full transition-all duration-200 hover:bg-accent",
+              currentStep === 1 ? "opacity-50 cursor-not-allowed" : "hover:scale-110"
             )}
           >
             <ChevronUp className="h-6 w-6" />
           </button>
           <button
             onClick={handleNext}
-            className="p-2 rounded-full hover:bg-accent transition-opacity duration-200"
+            disabled={currentStep === 3}
+            className={cn(
+              "p-2 rounded-full transition-all duration-200 hover:bg-accent",
+              currentStep === 3 ? "opacity-50 cursor-not-allowed" : "hover:scale-110"
+            )}
           >
             <ChevronDown className="h-6 w-6" />
           </button>
